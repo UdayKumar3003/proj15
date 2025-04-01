@@ -3,7 +3,7 @@ name: Terraform Deploy
 on:
   push:
     branches:
-      - main
+      - main  # This triggers the workflow whenever there's a push to the main branch
 
 jobs:
   terraform:
@@ -13,15 +13,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 'latest'  # You can specify a version, or use 'latest'
 
+      # Configure AWS credentials (uses secrets already configured in GitHub)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}  # You can also configure this in your `terraform.tfvars`
+
+      # Terraform Format Check (ensures code style consistency)
+      - name: Terraform Format Check
+        run: terraform fmt -check
+
+      # Terraform Initialization (downloads provider plugins and sets up backend)
       - name: Terraform Init
         run: terraform init
 
+      # Terraform Validation (checks if the Terraform code is valid)
+      - name: Terraform Validate
+        run: terraform validate
+
+      # Terraform Plan (shows what Terraform will do)
       - name: Terraform Plan
         run: terraform plan
 
+      # Terraform Apply (applies the changes to AWS automatically)
       - name: Terraform Apply
         run: terraform apply -auto-approve
 
+      # Optional: Clean up after tests or when destroying infrastructure
+      # - name: Terraform Destroy
+      #   run: terraform destroy -auto-approve
